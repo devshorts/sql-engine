@@ -26,9 +26,37 @@ func TestQueries(t *testing.T) {
 		t.Fail()
 	}
 
-	if reflect.DeepEqual(result, []input.DataRow{
+	if !reflect.DeepEqual(result, []input.DataRow{
 		{"foo": "1"},
+		{"foo": "1"},
+	}) {
+		t.Fail()
+	}
+}
+
+func TestQueriesStar(t *testing.T) {
+	var sample = Query{
+		fields: []string{"*"},
+		group: &PredicateGroup{predicate: []Tree{
+			NewLeaf(Leaf{value: "1", compare: Eq, field: "foo"}),
+		}},
+	}
+
+	var data = []input.DataRow{
+		{"foo": "1", "bar": "2"},
+		{"foo": "1", "bar": "3"},
 		{"foo": "2"},
+	}
+
+	result, err := QueryData(data, sample)
+
+	if err != nil {
+		t.Fail()
+	}
+
+	if !reflect.DeepEqual(result, []input.DataRow{
+		{"foo": "1", "bar": "2"},
+		{"foo": "1", "bar": "3"},
 	}) {
 		t.Fail()
 	}

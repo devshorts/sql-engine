@@ -21,12 +21,12 @@ const (
 type ComparisonOperator string
 
 const (
-	Eq  ComparisonOperator = "eq"
-	Neq                    = "neq"
-	Gt                     = "gt"
-	Lt                     = "lt"
-	Gte                    = "gte"
-	Lte                    = "lte"
+	Eq  ComparisonOperator = "="
+	Neq                    = "!="
+	Gt                     = ">"
+	Lt                     = "<"
+	Gte                    = ">="
+	Lte                    = "<="
 	In                     = "in"
 )
 
@@ -130,6 +130,11 @@ func compare(row input.DataRow, predicate *Leaf) (bool, error) {
 }
 
 func inPredicateGroup(row input.DataRow, group *PredicateGroup) (bool, error) {
+	// no predicate, just select everything
+	if group == nil {
+		return true, nil
+	}
+
 	exists := func(predicate Tree) (bool, error) {
 		if predicate.leaf != nil {
 			return compare(row, predicate.leaf)
@@ -159,7 +164,7 @@ func selectFields(row input.DataRow, sql Query) input.DataRow {
 	selected := make(input.DataRow)
 
 	for key := range row {
-		if slices.Contains(sql.fields, key) {
+		if slices.Contains(sql.fields, key) || slices.Contains(sql.fields, "*") {
 			selected[key] = row[key]
 		}
 	}

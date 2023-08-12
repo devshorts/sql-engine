@@ -23,10 +23,9 @@ func main() {
 				return errors.New("Need valid sql query as first argument")
 			}
 
-			query := sql.Parse(queryString)
-
-			if query == nil {
-				return errors.New("Unable to parse query")
+			query, err := sql.Parse(queryString)
+			if err != nil {
+				return err
 			}
 
 			dataRows, err := input.NewStdinReader().Parse(bufio.NewReader(os.Stdin))
