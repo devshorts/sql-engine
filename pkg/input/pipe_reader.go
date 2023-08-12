@@ -9,13 +9,13 @@ type DataRow map[string]interface{}
 
 type Reader interface {
 	// reads a set of newlines delimited json into a series of data rows
-	parse(buf *bufio.Reader) []DataRow
+	Parse(buf *bufio.Reader) []DataRow
 }
 
 type StdinReader struct {
 }
 
-func (s StdinReader) parse(buf *bufio.Reader) ([]DataRow, error) {
+func (s StdinReader) Parse(buf *bufio.Reader) ([]DataRow, error) {
 	scanner := bufio.NewScanner(buf)
 
 	var lines []DataRow

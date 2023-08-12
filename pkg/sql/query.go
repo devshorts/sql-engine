@@ -78,7 +78,7 @@ func compare(row input.DataRow, predicate *Leaf) (bool, error) {
 		return false, nil
 	}
 
-	slog.Info("Processing predicate",
+	slog.Debug("Processing predicate",
 		"predicate-value", fmt.Sprintf("%s", reflect.TypeOf(predicate.value)),
 		"value", fmt.Sprintf("%s", reflect.TypeOf(value)),
 	)
