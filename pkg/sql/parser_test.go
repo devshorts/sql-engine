@@ -6,9 +6,50 @@ import (
 	"testing"
 )
 
+func TestParsesInline(t *testing.T) {
+	result, err := Parse("select foo, bar, biz where x = 2 or y = 3")
+	if err != nil {
+		t.Logf(`%s`, err)
+		t.Fail()
+	}
+
+	if !reflect.DeepEqual(result.Fields, []string{"foo", "bar", "biz"}) {
+		t.Fail()
+	}
+
+	if result.Group.Operator != Or {
+		t.Fail()
+	}
+
+	if result.Group.Predicate[0].Leaf.Field != "x" {
+		t.Fail()
+	}
+
+	if result.Group.Predicate[0].Leaf.Compare != Eq {
+		t.Fail()
+	}
+
+	if result.Group.Predicate[0].Leaf.Value != "2" {
+		t.Fail()
+	}
+
+	if result.Group.Predicate[1].Leaf.Field != "y" {
+		t.Fail()
+	}
+
+	if result.Group.Predicate[1].Leaf.Compare != Eq {
+		t.Fail()
+	}
+
+	if result.Group.Predicate[1].Leaf.Value != "3" {
+		t.Fail()
+	}
+}
+
 func TestParses(t *testing.T) {
 	result, err := Parse("select foo, bar, biz where (x = 2)")
 	if err != nil {
+		t.Logf(`%s`, err)
 		t.Fail()
 	}
 
@@ -75,6 +116,7 @@ func TestParsesWithOperator(t *testing.T) {
 func TestParsesWithOperatorGrouping(t *testing.T) {
 	result, err := Parse("select foo, bar, biz where (x = 2 and y = 3) or foo = 1")
 	if err != nil {
+		t.Logf(`%s`, err)
 		t.Fail()
 	}
 

@@ -9,9 +9,6 @@ import (
 const (
 	sel   = "select"
 	where = "where"
-	eq    = "="
-	neq   = "!="
-	in    = "in"
 )
 
 func Parse(raw string) (*Query, error) {
@@ -71,24 +68,39 @@ func parseGroup(stream *streamTokenizer) (*PredicateGroup, error) {
 
 	// if an Operator exists grab it
 	operator, err := nextOperator(stream, token, err)
-	if err != nil {
+	if err != nil && !errors.Is(err, eof) {
 		return nil, err
 	}
 
 	// do the next Leaf
 	leaf, err := parseLeaf(stream)
-	if err != nil {
+	if err != nil && !errors.Is(err, eof) {
 		return nil, err
 	}
 
-	// we have a leaf, append it to our list of current predicates
-	predicates = append(predicates, NewLeaf(*leaf))
+	// if we didn't have an operator try again
+	if operator == nil {
+		operator, err = nextOperator(stream, token, err)
+		if err != nil && !errors.Is(err, eof) {
+			return nil, err
+		}
+
+		if operator == nil {
+			var op GroupingOperator = "and"
+			operator = &op
+		}
+	}
+
+	if leaf != nil {
+		// we have a leaf, append it to our list of current predicates
+		predicates = append(predicates, NewLeaf(*leaf))
+	}
 
 	// if we're at eof return the tree we have
 	_, err = stream.Peek()
 	if errors.Is(err, eof) {
 		return &PredicateGroup{
-			Operator:  operator,
+			Operator:  *operator,
 			Predicate: predicates,
 		}, nil
 	}
@@ -108,12 +120,12 @@ func parseGroup(stream *streamTokenizer) (*PredicateGroup, error) {
 	}
 
 	return &PredicateGroup{
-		Operator:  operator,
+		Operator:  *operator,
 		Predicate: predicates,
 	}, nil
 }
 
-func nextOperator(stream *streamTokenizer, token string, err error) (GroupingOperator, error) {
+func nextOperator(stream *streamTokenizer, token string, err error) (*GroupingOperator, error) {
 	token, _ = stream.Peek()
 
 	var operator GroupingOperator
@@ -121,22 +133,22 @@ func nextOperator(stream *streamTokenizer, token string, err error) (GroupingOpe
 	case And:
 		_, err := stream.Consume()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		operator = And
 	case Or:
 		_, err := stream.Consume()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		operator = Or
 	default:
-		operator = And
+		return nil, err
 	}
 
-	return operator, nil
+	return &operator, nil
 }
 
 func parenthesisGroup(stream *streamTokenizer, token string) (*PredicateGroup, error) {
