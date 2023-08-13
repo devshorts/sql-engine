@@ -8,9 +8,9 @@ import (
 
 func TestQueries(t *testing.T) {
 	var sample = Query{
-		fields: []string{"foo"},
-		group: &PredicateGroup{predicate: []Tree{
-			NewLeaf(Leaf{value: "1", compare: Eq, field: "foo"}),
+		Fields: []string{"foo"},
+		Group: &PredicateGroup{Predicate: []Tree{
+			NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
 		}},
 	}
 
@@ -36,9 +36,9 @@ func TestQueries(t *testing.T) {
 
 func TestQueriesStar(t *testing.T) {
 	var sample = Query{
-		fields: []string{"*"},
-		group: &PredicateGroup{predicate: []Tree{
-			NewLeaf(Leaf{value: "1", compare: Eq, field: "foo"}),
+		Fields: []string{"*"},
+		Group: &PredicateGroup{Predicate: []Tree{
+			NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
 		}},
 	}
 
@@ -64,12 +64,12 @@ func TestQueriesStar(t *testing.T) {
 
 func TestCompoundQueries(t *testing.T) {
 	var sample = Query{
-		fields: []string{"foo"},
-		group: &PredicateGroup{
-			operator: Or,
-			predicate: []Tree{
-				NewLeaf(Leaf{value: "1", compare: Eq, field: "foo"}),
-				NewLeaf(Leaf{value: "3", compare: Eq, field: "bar"}),
+		Fields: []string{"foo"},
+		Group: &PredicateGroup{
+			Operator: Or,
+			Predicate: []Tree{
+				NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
+				NewLeaf(Leaf{Value: "3", Compare: Eq, Field: "bar"}),
 			}},
 	}
 
@@ -98,17 +98,17 @@ func TestCompoundQueries(t *testing.T) {
 func TestCompoundTreeQueries(t *testing.T) {
 	// foo = 1 or bar = 3 or (baz = 5 and foo=5
 	var sample = Query{
-		fields: []string{"foo", "id"},
-		group: &PredicateGroup{
-			operator: Or,
-			predicate: []Tree{
-				NewLeaf(Leaf{value: "1", compare: Eq, field: "foo"}),
-				NewLeaf(Leaf{value: "3", compare: Eq, field: "bar"}),
-				NewGroup(PredicateGroup{
-					operator: And,
-					predicate: []Tree{
-						NewLeaf(Leaf{value: 5, compare: Eq, field: "baz"}),
-						NewLeaf(Leaf{value: "5", compare: Eq, field: "foo"}),
+		Fields: []string{"foo", "id"},
+		Group: &PredicateGroup{
+			Operator: Or,
+			Predicate: []Tree{
+				NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
+				NewLeaf(Leaf{Value: "3", Compare: Eq, Field: "bar"}),
+				NewGroup(&PredicateGroup{
+					Operator: And,
+					Predicate: []Tree{
+						NewLeaf(Leaf{Value: 5, Compare: Eq, Field: "baz"}),
+						NewLeaf(Leaf{Value: "5", Compare: Eq, Field: "foo"}),
 					},
 				}),
 			}},
@@ -143,9 +143,9 @@ func TestCompoundTreeQueries(t *testing.T) {
 
 func TestInClause(t *testing.T) {
 	var sample = Query{
-		fields: []string{"foo"},
-		group: &PredicateGroup{predicate: []Tree{
-			NewLeaf(Leaf{value: []string{"1"}, compare: In, field: "foo"}),
+		Fields: []string{"foo"},
+		Group: &PredicateGroup{Predicate: []Tree{
+			NewLeaf(Leaf{Value: []string{"1"}, Compare: In, Field: "foo"}),
 		}},
 	}
 

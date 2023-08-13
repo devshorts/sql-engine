@@ -31,34 +31,39 @@ const (
 )
 
 type Leaf struct {
-	field   string
-	compare ComparisonOperator
-	value   interface{}
+	Field   string
+	Compare ComparisonOperator
+	Value   interface{}
 }
 
 type Tree struct {
-	leaf  *Leaf
-	group *PredicateGroup
+	Leaf  *Leaf           `json:",omitempty"`
+	Group *PredicateGroup `json:",omitempty"`
 }
 
 func NewLeaf(data Leaf) Tree {
-	return Tree{leaf: &data}
+	return Tree{Leaf: &data}
 }
 
-func NewGroup(data PredicateGroup) Tree {
-	return Tree{group: &data}
+func NewGroup(data *PredicateGroup) Tree {
+	// special case a Group of 1 to be a Leaf
+	if len(data.Predicate) == 1 {
+		return data.Predicate[0]
+	}
+
+	return Tree{Group: data}
 }
 
 // (x = 1 OR y = 2) and (y = 3)
 type PredicateGroup struct {
-	operator  GroupingOperator
-	predicate []Tree
+	Operator  GroupingOperator
+	Predicate []Tree
 }
 
 // select foo where ...
 type Query struct {
-	fields []string
-	group  *PredicateGroup
+	Fields []string
+	Group  *PredicateGroup `json:",omitempty"`
 }
 
 func sliceCompare[T comparable](source []T, value T, op ComparisonOperator) (bool, error) {
@@ -70,30 +75,30 @@ func sliceCompare[T comparable](source []T, value T, op ComparisonOperator) (boo
 	}
 }
 
-// A leaf comparison of the data row to know if it should be included in the final result or not
+// A Leaf comparison of the data row to know if it should be included in the final result or not
 func compare(row input.DataRow, predicate *Leaf) (bool, error) {
-	value := row[predicate.field]
+	value := row[predicate.Field]
 
-	if value == nil && predicate.value != nil {
+	if value == nil && predicate.Value != nil {
 		return false, nil
 	}
 
-	slog.Debug("Processing predicate",
-		"predicate-value", fmt.Sprintf("%s", reflect.TypeOf(predicate.value)),
-		"value", fmt.Sprintf("%s", reflect.TypeOf(value)),
+	slog.Debug("Processing Predicate",
+		"Predicate-Value", fmt.Sprintf("%s", reflect.TypeOf(predicate.Value)),
+		"Value", fmt.Sprintf("%s", reflect.TypeOf(value)),
 	)
 
-	if reflect.TypeOf(predicate.value).Kind() == reflect.Slice {
-		// in clause if the predicate is an array
-		switch in := predicate.value.(type) {
+	if reflect.TypeOf(predicate.Value).Kind() == reflect.Slice {
+		// in clause if the Predicate is an array
+		switch in := predicate.Value.(type) {
 		case []string:
-			return sliceCompare(in, value.(string), predicate.compare)
+			return sliceCompare(in, value.(string), predicate.Compare)
 		case []int:
-			return sliceCompare(in, value.(int), predicate.compare)
+			return sliceCompare(in, value.(int), predicate.Compare)
 		case []float64:
-			return sliceCompare(in, value.(float64), predicate.compare)
+			return sliceCompare(in, value.(float64), predicate.Compare)
 		case []interface{}:
-			return sliceCompare(in, value, predicate.compare)
+			return sliceCompare(in, value, predicate.Compare)
 		}
 
 		return false, errors.New("unsupported array type")
@@ -102,16 +107,16 @@ func compare(row input.DataRow, predicate *Leaf) (bool, error) {
 	var result int
 	switch casted := value.(type) {
 	case string:
-		result = cmp.Compare(casted, predicate.value.(string))
+		result = cmp.Compare(casted, predicate.Value.(string))
 	case int:
-		result = cmp.Compare(casted, predicate.value.(int))
+		result = cmp.Compare(casted, predicate.Value.(int))
 	case float64:
-		result = cmp.Compare(casted, predicate.value.(float64))
+		result = cmp.Compare(casted, predicate.Value.(float64))
 	default:
 		return false, errors.New(fmt.Sprintf("unsupported type %s", reflect.TypeOf(value)))
 	}
 
-	switch predicate.compare {
+	switch predicate.Compare {
 	case Neq:
 		return result != 0, nil
 	case Eq:
@@ -126,45 +131,45 @@ func compare(row input.DataRow, predicate *Leaf) (bool, error) {
 		return result < 1, nil
 	}
 
-	return false, errors.New("invalid predicate")
+	return false, errors.New("invalid Predicate")
 }
 
 func inPredicateGroup(row input.DataRow, group *PredicateGroup) (bool, error) {
-	// no predicate, just select everything
+	// no Predicate, just select everything
 	if group == nil {
 		return true, nil
 	}
 
 	exists := func(predicate Tree) (bool, error) {
-		if predicate.leaf != nil {
-			return compare(row, predicate.leaf)
+		if predicate.Leaf != nil {
+			return compare(row, predicate.Leaf)
 		}
 
-		if predicate.group != nil {
-			return inPredicateGroup(row, predicate.group)
+		if predicate.Group != nil {
+			return inPredicateGroup(row, predicate.Group)
 		}
 
 		return false, nil
 	}
 
-	switch group.operator {
+	switch group.Operator {
 	case "":
 		fallthrough
 	case And:
-		return util.Every(group.predicate, exists)
+		return util.Every(group.Predicate, exists)
 	case Or:
-		return util.Some(group.predicate, exists)
+		return util.Some(group.Predicate, exists)
 	}
 
-	return false, errors.New("invalid predicate operator")
+	return false, errors.New("invalid Predicate Operator")
 }
 
-// extracts selected fields
+// extracts selected Fields
 func selectFields(row input.DataRow, sql Query) input.DataRow {
 	selected := make(input.DataRow)
 
 	for key := range row {
-		if slices.Contains(sql.fields, key) || slices.Contains(sql.fields, "*") {
+		if slices.Contains(sql.Fields, key) || slices.Contains(sql.Fields, "*") {
 			selected[key] = row[key]
 		}
 	}
@@ -176,7 +181,7 @@ func QueryData(data []input.DataRow, sql Query) ([]input.DataRow, error) {
 	var results []input.DataRow
 
 	for _, row := range data {
-		if exists, err := inPredicateGroup(row, sql.group); err == nil {
+		if exists, err := inPredicateGroup(row, sql.Group); err == nil {
 			if exists {
 				selectedFields := selectFields(row, sql)
 

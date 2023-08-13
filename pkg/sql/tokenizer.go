@@ -32,7 +32,7 @@ func (c *streamTokenizer) Consume() (string, error) {
 
 func (c *streamTokenizer) Peek() (string, error) {
 	if c.index > len(c.tokens)-1 {
-		return "", errors.New("Cannot peek past end of stream")
+		return "", eof
 	}
 
 	result := c.tokens[c.index]

@@ -1,6 +1,9 @@
 package sql
 
-import "unicode"
+import (
+	"strings"
+	"unicode"
+)
 
 type Tokens []string
 
@@ -11,9 +14,21 @@ func Lex(raw string) Tokens {
 
 	buff := ""
 	for _, char := range []rune(raw) {
+		if char == '(' || char == ')' {
+			if buff != "" {
+				tokens = append(tokens, strings.Trim(buff, " "))
+			}
+
+			tokens = append(tokens, string(char))
+			buff = ""
+			continue
+		}
+
 		// in a quoted string and ending the quote
 		if char == '"' && parenth {
-			tokens = append(tokens, buff)
+			if buff != "" {
+				tokens = append(tokens, strings.Trim(buff, " "))
+			}
 			parenth = false
 			buff = ""
 			continue
@@ -28,8 +43,8 @@ func Lex(raw string) Tokens {
 				continue
 			}
 
-			if unicode.IsSpace(char) {
-				tokens = append(tokens, buff)
+			if unicode.IsSpace(char) && buff != "" {
+				tokens = append(tokens, strings.Trim(buff, " "))
 				buff = ""
 				continue
 			}
@@ -40,7 +55,7 @@ func Lex(raw string) Tokens {
 	}
 
 	if buff != "" {
-		tokens = append(tokens, buff)
+		tokens = append(tokens, strings.Trim(buff, " "))
 	}
 
 	return tokens

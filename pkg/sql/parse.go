@@ -9,7 +9,7 @@ import (
 const (
 	sel   = "select"
 	where = "where"
-	eq    = "=="
+	eq    = "="
 	neq   = "!="
 	in    = "in"
 )
@@ -19,9 +19,9 @@ func Parse(raw string) (*Query, error) {
 
 	fields, err := parseFields(stream)
 	if err != nil {
-		if err == eof {
+		if errors.Is(err, eof) {
 			return &Query{
-				fields: fields,
+				Fields: fields,
 			}, nil
 		}
 		return nil, err
@@ -33,23 +33,134 @@ func Parse(raw string) (*Query, error) {
 	}
 
 	return &Query{
-		fields: fields,
-		group:  group,
+		Fields: fields,
+		Group:  group,
 	}, nil
 }
 
 func parseGroup(stream *streamTokenizer) (*PredicateGroup, error) {
+	// end of file, return empty Group
+	token, err := stream.Peek()
+	if errors.Is(err, eof) {
+		return &PredicateGroup{
+			Operator:  And,
+			Predicate: []Tree{},
+		}, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// we've reached the end of a Group, bubble out
+	if token == ")" {
+		return nil, nil
+	}
+
+	var predicates []Tree
+
+	// open parenth, try priority Group
+	if token == "(" {
+		group, err := parenthesisGroup(stream, token)
+		if err != nil {
+			return nil, err
+		}
+
+		predicates = append(predicates, NewGroup(group))
+	}
+
+	// if an Operator exists grab it
+	operator, err := nextOperator(stream, token, err)
+	if err != nil {
+		return nil, err
+	}
+
+	// do the next Leaf
 	leaf, err := parseLeaf(stream)
 	if err != nil {
 		return nil, err
 	}
 
+	// we have a leaf, append it to our list of current predicates
+	predicates = append(predicates, NewLeaf(*leaf))
+
+	// if we're at eof return the tree we have
+	_, err = stream.Peek()
+	if errors.Is(err, eof) {
+		return &PredicateGroup{
+			Operator:  operator,
+			Predicate: predicates,
+		}, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// get the next Group if one exists, otherwise we've reached the Leaf
+	group, err := parseGroup(stream)
+	if err != nil {
+		return nil, err
+	}
+
+	if group != nil {
+		predicates = append(predicates, NewGroup(group))
+	}
+
 	return &PredicateGroup{
-		operator: And,
-		predicate: []Tree{
-			NewLeaf(*leaf),
-		},
+		Operator:  operator,
+		Predicate: predicates,
 	}, nil
+}
+
+func nextOperator(stream *streamTokenizer, token string, err error) (GroupingOperator, error) {
+	token, _ = stream.Peek()
+
+	var operator GroupingOperator
+	switch GroupingOperator(token) {
+	case And:
+		_, err := stream.Consume()
+		if err != nil {
+			return "", err
+		}
+
+		operator = And
+	case Or:
+		_, err := stream.Consume()
+		if err != nil {
+			return "", err
+		}
+
+		operator = Or
+	default:
+		operator = And
+	}
+
+	return operator, nil
+}
+
+func parenthesisGroup(stream *streamTokenizer, token string) (*PredicateGroup, error) {
+	token, err := stream.Consume()
+	if token != "(" {
+		return nil, errors.New("missing open parenthesis")
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	group, err := parseGroup(stream)
+
+	token, err = stream.Consume()
+	if err != nil {
+		return nil, err
+	}
+
+	if token != ")" {
+		return nil, errors.New("missing closing bracket")
+	}
+
+	return group, nil
 }
 
 func parseLeaf(stream *streamTokenizer) (*Leaf, error) {
@@ -83,13 +194,13 @@ func parseLeaf(stream *streamTokenizer) (*Leaf, error) {
 		fallthrough
 	case In:
 	default:
-		return nil, errors.New(fmt.Sprintf("%s is not a valid operator", operator))
+		return nil, errors.New(fmt.Sprintf("%s is not a valid Operator", operator))
 	}
 
 	return &Leaf{
-		field:   field,
-		value:   value,
-		compare: ComparisonOperator(operator),
+		Field:   field,
+		Value:   value,
+		Compare: ComparisonOperator(operator),
 	}, nil
 }
 
@@ -105,7 +216,7 @@ func parseFields(stream *streamTokenizer) ([]string, error) {
 		field, err := stream.Consume()
 
 		if err != nil {
-			if err == eof {
+			if errors.Is(err, eof) {
 				return fields, err
 			}
 

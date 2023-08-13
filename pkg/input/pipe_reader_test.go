@@ -13,7 +13,7 @@ func TestReadsPipe(t *testing.T) {
 
 	reader := bufio.NewReader(bytes.NewReader(data))
 
-	result, err := NewStdinReader().parse(reader)
+	result, err := NewStdinReader().Parse(reader)
 
 	if err != nil {
 		t.Error(err)
