@@ -216,13 +216,13 @@ func parseLeaf(stream *streamTokenizer) (*Leaf, error) {
 	}, nil
 }
 
-func parseFields(stream *streamTokenizer) ([]string, error) {
+func parseFields(stream *streamTokenizer) ([]Field, error) {
 	peek, err := stream.Consume()
 	if err != nil || peek != sel {
 		return nil, err
 	}
 
-	var fields []string
+	var fields []Field
 
 	for {
 		field, err := stream.Consume()
@@ -236,7 +236,11 @@ func parseFields(stream *streamTokenizer) ([]string, error) {
 		}
 
 		if field != where {
-			fields = append(fields, strings.TrimRight(field, ","))
+			name := strings.TrimRight(field, ",")
+
+			fields = append(fields, Field{
+				name: name,
+			})
 		} else {
 			break
 		}

@@ -60,9 +60,23 @@ type PredicateGroup struct {
 	Predicate []Tree
 }
 
+type Function = string
+
+const (
+	Average Function = "average"
+	Max              = "max"
+	Min              = "min"
+)
+
+type Field struct {
+	name     string
+	alias    *string
+	function *Function
+}
+
 // select foo where ...
 type Query struct {
-	Fields []string
+	Fields []Field
 	Group  *PredicateGroup `json:",omitempty"`
 }
 
@@ -168,13 +182,38 @@ func inPredicateGroup(row input.DataRow, group *PredicateGroup) (bool, error) {
 func selectFields(row input.DataRow, sql Query) input.DataRow {
 	selected := make(input.DataRow)
 
+	allFieldNames := FieldNames(sql)
+
 	for key := range row {
-		if slices.Contains(sql.Fields, key) || slices.Contains(sql.Fields, "*") {
-			selected[key] = row[key]
+		if slices.Contains(allFieldNames, key) || slices.Contains(allFieldNames, "*") {
+			selected[keyAlias(key, sql)] = row[key]
 		}
 	}
 
 	return selected
+}
+
+func keyAlias(key string, sql Query) string {
+	for _, field := range sql.Fields {
+		if field.name == key {
+			if field.alias != nil {
+				return *field.alias
+			}
+			return field.name
+		}
+	}
+
+	return key
+}
+
+func FieldNames(sql Query) []string {
+	var names []string
+
+	for _, field := range sql.Fields {
+		names = append(names, field.name)
+	}
+
+	return names
 }
 
 func QueryData(data []input.DataRow, sql Query) ([]input.DataRow, error) {

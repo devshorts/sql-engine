@@ -13,7 +13,7 @@ func TestParsesInline(t *testing.T) {
 		t.Fail()
 	}
 
-	if !reflect.DeepEqual(result.Fields, []string{"foo", "bar", "biz"}) {
+	if !reflect.DeepEqual(FieldNames(*result), []string{"foo", "bar", "biz"}) {
 		t.Fail()
 	}
 
@@ -53,7 +53,7 @@ func TestParses(t *testing.T) {
 		t.Fail()
 	}
 
-	if !reflect.DeepEqual(result.Fields, []string{"foo", "bar", "biz"}) {
+	if !reflect.DeepEqual(FieldNames(*result), []string{"foo", "bar", "biz"}) {
 		t.Fail()
 	}
 
@@ -80,7 +80,7 @@ func TestParsesWithOperator(t *testing.T) {
 		t.Fail()
 	}
 
-	if !reflect.DeepEqual(result.Fields, []string{"foo", "bar", "biz"}) {
+	if !reflect.DeepEqual(FieldNames(*result), []string{"foo", "bar", "biz"}) {
 		t.Fail()
 	}
 
@@ -120,12 +120,12 @@ func TestParsesWithOperatorGrouping(t *testing.T) {
 		t.Fail()
 	}
 
-	if !reflect.DeepEqual(result.Fields, []string{"foo", "bar", "biz"}) {
+	if !reflect.DeepEqual(FieldNames(*result), []string{"foo", "bar", "biz"}) {
 		t.Fail()
 	}
 
 	query := toJson(Query{
-		Fields: []string{"foo", "bar", "biz"},
+		Fields: []Field{{name: "foo"}, {name: "bar"}, {name: "biz"}},
 		Group: &PredicateGroup{
 			Operator: Or,
 			Predicate: []Tree{
