@@ -227,6 +227,10 @@ func parseFields(stream *streamTokenizer) ([]Field, error) {
 	for {
 		field, err := stream.Consume()
 
+		if field == where {
+			break
+		}
+
 		if err != nil {
 			if errors.Is(err, eof) {
 				return fields, err
@@ -235,41 +239,41 @@ func parseFields(stream *streamTokenizer) ([]Field, error) {
 			return nil, err
 		}
 
-		as, err := stream.Peek()
+		next, err := stream.Peek()
 		if err != nil {
 			return nil, err
 		}
 
-		var alias string
+		var alias KeyAlias
+		var function *Function
 
-		// if we have a field as Alias then get it
-		if as == "as" {
-			_, err := stream.Consume()
+		switch next {
+		case "as":
+			alias, err = parseAlias(stream)
+			if err != nil {
+				return nil, err
+			}
+			// its actually a function
+		case "(":
+			function, err = parseFunction(stream)
 			if err != nil {
 				return nil, err
 			}
 
-			alias, err = stream.Consume()
+			// a function has to be followed by an alias
+			alias, err = parseAlias(stream)
 			if err != nil {
-				if errors.Is(err, eof) {
-					return fields, err
-				}
-
 				return nil, err
 			}
 		}
 
-		if field != where {
-			fieldName := strings.TrimRight(field, ",")
-			fieldAlias := KeyAlias(strings.TrimRight(alias, ","))
+		fieldName := strings.TrimRight(field, ",")
 
-			fields = append(fields, Field{
-				Name:  fieldName,
-				Alias: tern(alias != "", fieldAlias, KeyAlias(fieldName)),
-			})
-		} else {
-			break
-		}
+		fields = append(fields, Field{
+			Name:     fieldName,
+			Alias:    tern(alias != "", alias, KeyAlias(fieldName)),
+			Function: function,
+		})
 	}
 
 	return fields, nil
@@ -281,4 +285,45 @@ func tern[T any](pred bool, left T, right T) T {
 	}
 
 	return right
+}
+
+func parseAlias(stream *streamTokenizer) (KeyAlias, error) {
+	as, err := stream.Consume()
+	if err != nil {
+		return "", err
+	}
+
+	if as != "as" {
+		return "", errors.New("invalid alias token, expected 'as'")
+	}
+
+	alias, err := stream.Consume()
+	if err != nil {
+		return "", err
+	}
+
+	return KeyAlias(strings.TrimRight(alias, ",")), nil
+}
+
+func parseFunction(stream *streamTokenizer) (*Function, error) {
+	_, err := stream.Consume()
+	if err != nil {
+		return nil, err
+	}
+
+	function, err := stream.Consume()
+	if err != nil {
+		return nil, err
+	}
+
+	closeBracket, err := stream.Consume()
+	if err != nil {
+		return nil, err
+	}
+
+	if closeBracket != ")" {
+		return nil, errors.New("unclosed bracket after function definition")
+	}
+
+	return &function, nil
 }

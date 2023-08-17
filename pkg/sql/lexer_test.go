@@ -52,3 +52,37 @@ func TestLexesWithParenth(t *testing.T) {
 		t.Fail()
 	}
 }
+
+func TestLexesWithParenthAlias(t *testing.T) {
+	lexed := Lex(`select average(foo) as avg from bar where (zap = "jim jam" and zip = 1) or boo = 3`)
+
+	result := []string{
+		`select`,
+		`average`,
+		`(`,
+		`foo`,
+		`)`,
+		`as`,
+		`avg`,
+		`from`,
+		`bar`,
+		`where`,
+		`(`,
+		`zap`,
+		`=`,
+		`jim jam`,
+		`and`,
+		`zip`,
+		`=`,
+		`1`,
+		`)`,
+		`or`,
+		`boo`,
+		`=`,
+		`3`,
+	}
+
+	if !slices.Equal(result, lexed) {
+		t.Fail()
+	}
+}
