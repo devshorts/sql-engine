@@ -70,7 +70,7 @@ const (
 
 type Field struct {
 	name     string
-	alias    *string
+	alias    string
 	function *Function
 }
 
@@ -196,8 +196,8 @@ func selectFields(row input.DataRow, sql Query) input.DataRow {
 func keyAlias(key string, sql Query) string {
 	for _, field := range sql.Fields {
 		if field.name == key {
-			if field.alias != nil {
-				return *field.alias
+			if field.alias != "" {
+				return field.alias
 			}
 			return field.name
 		}

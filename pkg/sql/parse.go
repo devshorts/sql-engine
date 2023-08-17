@@ -235,11 +235,34 @@ func parseFields(stream *streamTokenizer) ([]Field, error) {
 			return nil, err
 		}
 
-		if field != where {
-			name := strings.TrimRight(field, ",")
+		as, err := stream.Peek()
+		if err != nil {
+			return nil, err
+		}
 
+		var alias string
+
+		// if we have a field as alias then get it
+		if as == "as" {
+			_, err := stream.Consume()
+			if err != nil {
+				return nil, err
+			}
+
+			alias, err = stream.Consume()
+			if err != nil {
+				if errors.Is(err, eof) {
+					return fields, err
+				}
+
+				return nil, err
+			}
+		}
+
+		if field != where {
 			fields = append(fields, Field{
-				name: name,
+				name:  strings.TrimRight(field, ","),
+				alias: strings.TrimRight(alias, ","),
 			})
 		} else {
 			break

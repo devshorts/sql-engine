@@ -46,6 +46,20 @@ func TestParsesInline(t *testing.T) {
 	}
 }
 
+func TestParsesWithAlias(t *testing.T) {
+	result, err := Parse("select foo as newfoo, bar, biz where x = 2 or y = 3")
+	if err != nil {
+		t.Logf(`%s`, err)
+		t.Fail()
+	}
+
+	fooField := Field{name: "foo", alias: "newfoo"}
+
+	if result.Fields[0] != fooField {
+		t.Fail()
+	}
+}
+
 func TestParses(t *testing.T) {
 	result, err := Parse("select foo, bar, biz where (x = 2)")
 	if err != nil {
