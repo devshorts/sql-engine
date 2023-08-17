@@ -34,6 +34,38 @@ func TestQueries(t *testing.T) {
 	}
 }
 
+func TestQueriesAverage(t *testing.T) {
+	var sql = Query{
+		Fields: []Field{{Name: "foo", Alias: "avg", Function: Average}, {Name: "bar", Alias: "bar"}},
+		Group: &PredicateGroup{Predicate: []Tree{
+			NewLeaf(Leaf{Value: 0, Compare: Gt, Field: "foo"}),
+		}},
+	}
+
+	var data = []input.DataRow{
+		{"foo": 2, "bar": "2"},
+		{"foo": 2, "bar": "3"},
+		{"foo": 2},
+		{"foo": -2099},
+		{"foo": 2},
+	}
+
+	result, err := NewExecutor(sql).QueryData(data)
+
+	if err != nil {
+		t.Fail()
+	}
+
+	if !reflect.DeepEqual(result, []input.DataRow{
+		{"avg": float64(2), "bar": "2"},
+		{"avg": float64(2), "bar": "3"},
+		{"avg": float64(2)},
+		{"avg": float64(2)},
+	}) {
+		t.Fail()
+	}
+}
+
 func TestQueriesWithAlias(t *testing.T) {
 	var sql = Query{
 		Fields: []Field{{Name: "foo", Alias: "newfoo"}},

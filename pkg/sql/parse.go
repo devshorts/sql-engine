@@ -245,7 +245,7 @@ func parseFields(stream *streamTokenizer) ([]Field, error) {
 		}
 
 		var alias KeyAlias
-		var function *Function
+		var function Function
 
 		switch next {
 		case "as":
@@ -305,25 +305,25 @@ func parseAlias(stream *streamTokenizer) (KeyAlias, error) {
 	return KeyAlias(strings.TrimRight(alias, ",")), nil
 }
 
-func parseFunction(stream *streamTokenizer) (*Function, error) {
+func parseFunction(stream *streamTokenizer) (Function, error) {
 	_, err := stream.Consume()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	function, err := stream.Consume()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	closeBracket, err := stream.Consume()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if closeBracket != ")" {
-		return nil, errors.New("unclosed bracket after function definition")
+		return "", errors.New("unclosed bracket after function definition")
 	}
 
-	return &function, nil
+	return function, nil
 }

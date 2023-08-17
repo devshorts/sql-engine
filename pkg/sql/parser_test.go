@@ -125,6 +125,18 @@ func TestParses(t *testing.T) {
 	}
 }
 
+func TestParsesWithFunctions(t *testing.T) {
+	result, err := Parse("select average(foo) as fooavg, bar, biz where (x = 2)")
+	if err != nil {
+		t.Logf(`%s`, err)
+		t.Fail()
+	}
+
+	if result.Fields[0].Function != Average && result.Fields[0].Alias != "fooavg" && result.Fields[0].Name != "foo" {
+		t.Fail()
+	}
+}
+
 func TestParsesWithOperator(t *testing.T) {
 	result, err := Parse("select foo, bar, biz where x = 2 and y = 3")
 	if err != nil {

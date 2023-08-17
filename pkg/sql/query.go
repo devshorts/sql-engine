@@ -6,9 +6,11 @@ import (
 	"example/pkg/input"
 	"example/pkg/util"
 	"fmt"
+	"golang.org/x/exp/constraints"
 	"log/slog"
 	"reflect"
 	"slices"
+	"strconv"
 )
 
 type GroupingOperator string
@@ -73,7 +75,7 @@ type KeyAlias string
 type Field struct {
 	Name     string
 	Alias    KeyAlias
-	Function *Function `json:",omitempty"`
+	Function Function `json:",omitempty"`
 }
 
 // select foo where ...
@@ -140,13 +142,13 @@ func (s *Executor) compare(predicate *Leaf, value interface{}) (bool, error) {
 	case Eq:
 		return result == 0, nil
 	case Gt:
-		return result > 1, nil
+		return result == 1, nil
 	case Gte:
-		return result > 1 || result == 0, nil
+		return result == 1 || result == 0, nil
 	case Lte:
-		return result < 1 || result == 0, nil
+		return result == -1 || result == 0, nil
 	case Lt:
-		return result < 1, nil
+		return result == -1, nil
 	}
 
 	return false, errors.New("invalid Predicate")
@@ -248,11 +250,84 @@ func (s *Executor) QueryData(data []input.DataRow) ([]input.DataRow, error) {
 		}
 	}
 
+	return s.processFunctionGroupings(results)
+}
+
+func (s *Executor) processFunctionGroupings(results []input.DataRow) ([]input.DataRow, error) {
+	var functionFields []Field
+	for _, field := range s.sql.Fields {
+		if field.Function != "" {
+			functionFields = append(functionFields, field)
+		}
+	}
+
+	if len(functionFields) == 0 {
+		return results, nil
+	}
+
+	for _, field := range functionFields {
+		var fieldValues []float64
+		for _, row := range results {
+			numeric, err := getFloat(row[string(field.Alias)])
+			if err != nil {
+				return nil, err
+			}
+			fieldValues = append(fieldValues, numeric)
+		}
+
+		switch field.Function {
+		case Average:
+			avg := average(fieldValues)
+
+			// assign the result to each row
+			for _, row := range results {
+				row[string(field.Alias)] = avg
+			}
+		}
+	}
+
 	return results, nil
+}
+
+type Number interface {
+	constraints.Float | constraints.Integer
+}
+
+func average[T Number](numbers []T) float64 {
+	var sum float64
+
+	for _, number := range numbers {
+		sum += float64(number)
+	}
+
+	return sum / float64(len(numbers))
 }
 
 func NewExecutor(sql Query) *Executor {
 	return &Executor{
 		sql: sql,
 	}
+}
+
+var floatType = reflect.TypeOf(float64(0))
+
+func getFloat(unk interface{}) (float64, error) {
+	str := fmt.Sprintf("%v", unk)
+
+	float, err := strconv.ParseFloat(str, 64)
+	if err == nil {
+		return float, nil
+	}
+
+	if err != nil {
+		v := reflect.ValueOf(unk)
+		v = reflect.Indirect(v)
+		if !v.Type().ConvertibleTo(floatType) {
+			return 0, fmt.Errorf("cannot convert %v to float64", v.Type())
+		}
+		fv := v.Convert(floatType)
+		return fv.Float(), nil
+	}
+
+	return 0, errors.New("unable to convert to float")
 }
