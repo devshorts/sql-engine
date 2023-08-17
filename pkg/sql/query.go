@@ -68,9 +68,11 @@ const (
 	Min              = "min"
 )
 
+type KeyAlias string
+
 type Field struct {
 	name     string
-	alias    string
+	alias    KeyAlias
 	function *Function
 }
 
@@ -78,6 +80,10 @@ type Field struct {
 type Query struct {
 	Fields []Field
 	Group  *PredicateGroup `json:",omitempty"`
+}
+
+type Executor struct {
+	sql Query
 }
 
 func sliceCompare[T comparable](source []T, value T, op ComparisonOperator) (bool, error) {
@@ -90,9 +96,7 @@ func sliceCompare[T comparable](source []T, value T, op ComparisonOperator) (boo
 }
 
 // A Leaf comparison of the data row to know if it should be included in the final result or not
-func compare(row input.DataRow, predicate *Leaf) (bool, error) {
-	value := row[predicate.Field]
-
+func (s *Executor) compare(row input.DataRow, predicate *Leaf, value interface{}) (bool, error) {
 	if value == nil && predicate.Value != nil {
 		return false, nil
 	}
@@ -148,7 +152,7 @@ func compare(row input.DataRow, predicate *Leaf) (bool, error) {
 	return false, errors.New("invalid Predicate")
 }
 
-func inPredicateGroup(row input.DataRow, group *PredicateGroup) (bool, error) {
+func (s *Executor) inPredicateGroup(row input.DataRow, group *PredicateGroup) (bool, error) {
 	// no Predicate, just select everything
 	if group == nil {
 		return true, nil
@@ -156,11 +160,13 @@ func inPredicateGroup(row input.DataRow, group *PredicateGroup) (bool, error) {
 
 	exists := func(predicate Tree) (bool, error) {
 		if predicate.Leaf != nil {
-			return compare(row, predicate.Leaf)
+			value := row[string(keyAlias(predicate.Leaf.Field, s.sql))]
+
+			return s.compare(row, predicate.Leaf, value)
 		}
 
 		if predicate.Group != nil {
-			return inPredicateGroup(row, predicate.Group)
+			return s.inPredicateGroup(row, predicate.Group)
 		}
 
 		return false, nil
@@ -186,24 +192,25 @@ func selectFields(row input.DataRow, sql Query) input.DataRow {
 
 	for key := range row {
 		if slices.Contains(allFieldNames, key) || slices.Contains(allFieldNames, "*") {
-			selected[keyAlias(key, sql)] = row[key]
+			selected[string(keyAlias(key, sql))] = row[key]
 		}
 	}
 
 	return selected
 }
 
-func keyAlias(key string, sql Query) string {
+func keyAlias(key string, sql Query) KeyAlias {
 	for _, field := range sql.Fields {
 		if field.name == key {
 			if field.alias != "" {
 				return field.alias
 			}
-			return field.name
+
+			return KeyAlias(field.name)
 		}
 	}
 
-	return key
+	return KeyAlias(key)
 }
 
 func FieldNames(sql Query) []string {
@@ -216,13 +223,13 @@ func FieldNames(sql Query) []string {
 	return names
 }
 
-func QueryData(data []input.DataRow, sql Query) ([]input.DataRow, error) {
+func (s *Executor) QueryData(data []input.DataRow) ([]input.DataRow, error) {
 	var results []input.DataRow
 
 	for _, row := range data {
-		if exists, err := inPredicateGroup(row, sql.Group); err == nil {
+		if exists, err := s.inPredicateGroup(row, s.sql.Group); err == nil {
 			if exists {
-				selectedFields := selectFields(row, sql)
+				selectedFields := selectFields(row, s.sql)
 
 				results = append(results, selectedFields)
 			}
@@ -232,4 +239,10 @@ func QueryData(data []input.DataRow, sql Query) ([]input.DataRow, error) {
 	}
 
 	return results, nil
+}
+
+func NewExecutor(sql Query) *Executor {
+	return &Executor{
+		sql: sql,
+	}
 }

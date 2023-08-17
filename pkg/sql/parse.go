@@ -262,7 +262,7 @@ func parseFields(stream *streamTokenizer) ([]Field, error) {
 		if field != where {
 			fields = append(fields, Field{
 				name:  strings.TrimRight(field, ","),
-				alias: strings.TrimRight(alias, ","),
+				alias: KeyAlias(strings.TrimRight(alias, ",")),
 			})
 		} else {
 			break

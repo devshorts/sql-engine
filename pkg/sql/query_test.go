@@ -7,7 +7,7 @@ import (
 )
 
 func TestQueries(t *testing.T) {
-	var sample = Query{
+	var sql = Query{
 		Fields: []Field{{name: "foo"}},
 		Group: &PredicateGroup{Predicate: []Tree{
 			NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
@@ -20,7 +20,7 @@ func TestQueries(t *testing.T) {
 		{"foo": "2"},
 	}
 
-	result, err := QueryData(data, sample)
+	result, err := NewExecutor(sql).QueryData(data)
 
 	if err != nil {
 		t.Fail()
@@ -34,8 +34,36 @@ func TestQueries(t *testing.T) {
 	}
 }
 
+func TestQueriesWithAlias(t *testing.T) {
+	var sql = Query{
+		Fields: []Field{{name: "foo", alias: "newfoo"}},
+		Group: &PredicateGroup{Predicate: []Tree{
+			NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "newfoo"}),
+		}},
+	}
+
+	var data = []input.DataRow{
+		{"foo": "1", "bar": "2"},
+		{"foo": "1", "bar": "3"},
+		{"foo": "2"},
+	}
+
+	result, err := NewExecutor(sql).QueryData(data)
+
+	if err != nil {
+		t.Fail()
+	}
+
+	if !reflect.DeepEqual(result, []input.DataRow{
+		{"newfoo": "1"},
+		{"newfoo": "1"},
+	}) {
+		t.Fail()
+	}
+}
+
 func TestQueriesStar(t *testing.T) {
-	var sample = Query{
+	var sql = Query{
 		Fields: []Field{{name: "*"}},
 		Group: &PredicateGroup{Predicate: []Tree{
 			NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
@@ -48,7 +76,7 @@ func TestQueriesStar(t *testing.T) {
 		{"foo": "2"},
 	}
 
-	result, err := QueryData(data, sample)
+	result, err := NewExecutor(sql).QueryData(data)
 
 	if err != nil {
 		t.Fail()
@@ -63,7 +91,7 @@ func TestQueriesStar(t *testing.T) {
 }
 
 func TestCompoundQueries(t *testing.T) {
-	var sample = Query{
+	var sql = Query{
 		Fields: []Field{{name: "foo"}},
 		Group: &PredicateGroup{
 			Operator: Or,
@@ -79,7 +107,7 @@ func TestCompoundQueries(t *testing.T) {
 		{"foo": "3"},
 	}
 
-	result, err := QueryData(data, sample)
+	result, err := NewExecutor(sql).QueryData(data)
 
 	if err != nil {
 		t.Logf("%s", err)
@@ -97,7 +125,7 @@ func TestCompoundQueries(t *testing.T) {
 
 func TestCompoundTreeQueries(t *testing.T) {
 	// foo = 1 or bar = 3 or (baz = 5 and foo=5
-	var sample = Query{
+	var sql = Query{
 		Fields: []Field{{name: "foo"}, {name: "id"}},
 		Group: &PredicateGroup{
 			Operator: Or,
@@ -123,7 +151,7 @@ func TestCompoundTreeQueries(t *testing.T) {
 		{"foo": "5", "baz": 5, "id": 2},
 	}
 
-	result, err := QueryData(data, sample)
+	result, err := NewExecutor(sql).QueryData(data)
 
 	if err != nil {
 		t.Logf("%s", err)
@@ -142,7 +170,7 @@ func TestCompoundTreeQueries(t *testing.T) {
 }
 
 func TestInClause(t *testing.T) {
-	var sample = Query{
+	var sql = Query{
 		Fields: []Field{{name: "foo"}},
 		Group: &PredicateGroup{Predicate: []Tree{
 			NewLeaf(Leaf{Value: []string{"1"}, Compare: In, Field: "foo"}),
@@ -155,7 +183,7 @@ func TestInClause(t *testing.T) {
 		{"foo": "2"},
 	}
 
-	result, err := QueryData(data, sample)
+	result, err := NewExecutor(sql).QueryData(data)
 
 	if err != nil {
 		t.Fail()
