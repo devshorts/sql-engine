@@ -96,7 +96,7 @@ func sliceCompare[T comparable](source []T, value T, op ComparisonOperator) (boo
 }
 
 // A Leaf comparison of the data row to know if it should be included in the final result or not
-func (s *Executor) compare(row input.DataRow, predicate *Leaf, value interface{}) (bool, error) {
+func (s *Executor) compare(predicate *Leaf, value interface{}) (bool, error) {
 	if value == nil && predicate.Value != nil {
 		return false, nil
 	}
@@ -160,9 +160,9 @@ func (s *Executor) inPredicateGroup(row input.DataRow, group *PredicateGroup) (b
 
 	exists := func(predicate Tree) (bool, error) {
 		if predicate.Leaf != nil {
-			value := row[string(keyAlias(predicate.Leaf.Field, s.sql))]
+			value := row[keyNameFromAlias(predicate.Leaf.Field, s.sql)]
 
-			return s.compare(row, predicate.Leaf, value)
+			return s.compare(predicate.Leaf, value)
 		}
 
 		if predicate.Group != nil {
@@ -192,14 +192,14 @@ func selectFields(row input.DataRow, sql Query) input.DataRow {
 
 	for key := range row {
 		if slices.Contains(allFieldNames, key) || slices.Contains(allFieldNames, "*") {
-			selected[string(keyAlias(key, sql))] = row[key]
+			selected[string(keyAliasFromName(key, sql))] = row[key]
 		}
 	}
 
 	return selected
 }
 
-func keyAlias(key string, sql Query) KeyAlias {
+func keyAliasFromName(key string, sql Query) KeyAlias {
 	for _, field := range sql.Fields {
 		if field.name == key {
 			if field.alias != "" {
@@ -211,6 +211,16 @@ func keyAlias(key string, sql Query) KeyAlias {
 	}
 
 	return KeyAlias(key)
+}
+
+func keyNameFromAlias(alias string, sql Query) string {
+	for _, field := range sql.Fields {
+		if field.alias == KeyAlias(alias) {
+			return field.name
+		}
+	}
+
+	return ""
 }
 
 func FieldNames(sql Query) []string {
