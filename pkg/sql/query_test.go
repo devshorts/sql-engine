@@ -8,7 +8,7 @@ import (
 
 func TestQueries(t *testing.T) {
 	var sql = Query{
-		Fields: []Field{{name: "foo"}},
+		Fields: []Field{{Name: "foo"}},
 		Group: &PredicateGroup{Predicate: []Tree{
 			NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
 		}},
@@ -36,7 +36,7 @@ func TestQueries(t *testing.T) {
 
 func TestQueriesWithAlias(t *testing.T) {
 	var sql = Query{
-		Fields: []Field{{name: "foo", alias: "newfoo"}},
+		Fields: []Field{{Name: "foo", Alias: "newfoo"}},
 		Group: &PredicateGroup{Predicate: []Tree{
 			NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "newfoo"}),
 		}},
@@ -64,7 +64,7 @@ func TestQueriesWithAlias(t *testing.T) {
 
 func TestQueriesStar(t *testing.T) {
 	var sql = Query{
-		Fields: []Field{{name: "*"}},
+		Fields: []Field{{Name: "*"}},
 		Group: &PredicateGroup{Predicate: []Tree{
 			NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
 		}},
@@ -92,7 +92,7 @@ func TestQueriesStar(t *testing.T) {
 
 func TestCompoundQueries(t *testing.T) {
 	var sql = Query{
-		Fields: []Field{{name: "foo"}},
+		Fields: []Field{{Name: "foo"}},
 		Group: &PredicateGroup{
 			Operator: Or,
 			Predicate: []Tree{
@@ -126,7 +126,7 @@ func TestCompoundQueries(t *testing.T) {
 func TestCompoundTreeQueries(t *testing.T) {
 	// foo = 1 or bar = 3 or (baz = 5 and foo=5
 	var sql = Query{
-		Fields: []Field{{name: "foo"}, {name: "id"}},
+		Fields: []Field{{Name: "foo"}, {Name: "id"}},
 		Group: &PredicateGroup{
 			Operator: Or,
 			Predicate: []Tree{
@@ -171,7 +171,7 @@ func TestCompoundTreeQueries(t *testing.T) {
 
 func TestInClause(t *testing.T) {
 	var sql = Query{
-		Fields: []Field{{name: "foo"}},
+		Fields: []Field{{Name: "foo"}},
 		Group: &PredicateGroup{Predicate: []Tree{
 			NewLeaf(Leaf{Value: []string{"1"}, Compare: In, Field: "foo"}),
 		}},

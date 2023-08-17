@@ -2,6 +2,7 @@ package sql
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -53,9 +54,45 @@ func TestParsesWithAlias(t *testing.T) {
 		t.Fail()
 	}
 
-	fooField := Field{name: "foo", alias: "newfoo"}
+	expectJ := toJson(result, t)
 
-	if result.Fields[0] != fooField {
+	fmt.Println(expectJ)
+
+	if toJson(result, t) != `{
+  "Fields": [
+    {
+      "Name": "foo",
+      "Alias": "newfoo"
+    },
+    {
+      "Name": "bar",
+      "Alias": "bar"
+    },
+    {
+      "Name": "biz",
+      "Alias": "biz"
+    }
+  ],
+  "Group": {
+    "Operator": "or",
+    "Predicate": [
+      {
+        "Leaf": {
+          "Field": "x",
+          "Compare": "=",
+          "Value": "2"
+        }
+      },
+      {
+        "Leaf": {
+          "Field": "y",
+          "Compare": "=",
+          "Value": "3"
+        }
+      }
+    ]
+  }
+}` {
 		t.Fail()
 	}
 }
@@ -139,7 +176,7 @@ func TestParsesWithOperatorGrouping(t *testing.T) {
 	}
 
 	query := toJson(Query{
-		Fields: []Field{{name: "foo"}, {name: "bar"}, {name: "biz"}},
+		Fields: []Field{{Name: "foo", Alias: "foo"}, {Name: "bar", Alias: "bar"}, {Name: "biz", Alias: "biz"}},
 		Group: &PredicateGroup{
 			Operator: Or,
 			Predicate: []Tree{

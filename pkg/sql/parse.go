@@ -242,7 +242,7 @@ func parseFields(stream *streamTokenizer) ([]Field, error) {
 
 		var alias string
 
-		// if we have a field as alias then get it
+		// if we have a field as Alias then get it
 		if as == "as" {
 			_, err := stream.Consume()
 			if err != nil {
@@ -260,9 +260,12 @@ func parseFields(stream *streamTokenizer) ([]Field, error) {
 		}
 
 		if field != where {
+			fieldName := strings.TrimRight(field, ",")
+			fieldAlias := KeyAlias(strings.TrimRight(alias, ","))
+
 			fields = append(fields, Field{
-				name:  strings.TrimRight(field, ","),
-				alias: KeyAlias(strings.TrimRight(alias, ",")),
+				Name:  fieldName,
+				Alias: tern(alias != "", fieldAlias, KeyAlias(fieldName)),
 			})
 		} else {
 			break
@@ -270,4 +273,12 @@ func parseFields(stream *streamTokenizer) ([]Field, error) {
 	}
 
 	return fields, nil
+}
+
+func tern[T any](pred bool, left T, right T) T {
+	if pred {
+		return left
+	}
+
+	return right
 }

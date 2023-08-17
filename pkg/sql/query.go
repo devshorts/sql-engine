@@ -71,9 +71,9 @@ const (
 type KeyAlias string
 
 type Field struct {
-	name     string
-	alias    KeyAlias
-	function *Function
+	Name     string
+	Alias    KeyAlias
+	Function *Function `json:",omitempty"`
 }
 
 // select foo where ...
@@ -201,12 +201,12 @@ func selectFields(row input.DataRow, sql Query) input.DataRow {
 
 func keyAliasFromName(key string, sql Query) KeyAlias {
 	for _, field := range sql.Fields {
-		if field.name == key {
-			if field.alias != "" {
-				return field.alias
+		if field.Name == key {
+			if field.Alias != "" {
+				return field.Alias
 			}
 
-			return KeyAlias(field.name)
+			return KeyAlias(field.Name)
 		}
 	}
 
@@ -215,19 +215,19 @@ func keyAliasFromName(key string, sql Query) KeyAlias {
 
 func keyNameFromAlias(alias string, sql Query) string {
 	for _, field := range sql.Fields {
-		if field.alias == KeyAlias(alias) {
-			return field.name
+		if field.Alias == KeyAlias(alias) {
+			return field.Name
 		}
 	}
 
-	return ""
+	return alias
 }
 
 func FieldNames(sql Query) []string {
 	var names []string
 
 	for _, field := range sql.Fields {
-		names = append(names, field.name)
+		names = append(names, field.Name)
 	}
 
 	return names
