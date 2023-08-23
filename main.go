@@ -33,7 +33,7 @@ func main() {
 				return err
 			}
 
-			result, err := sql.QueryData(dataRows, *query)
+			result, err := sql.NewExecutor(*query).QueryData(dataRows)
 			if err != nil {
 				return err
 			}

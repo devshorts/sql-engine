@@ -3,6 +3,7 @@ package sql
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -186,9 +187,15 @@ func parseLeaf(stream *streamTokenizer) (*Leaf, error) {
 		return nil, err
 	}
 
-	value, err := stream.Consume()
+	var value interface{}
+	value, err = stream.Consume()
 	if err != nil {
 		return nil, err
+	}
+
+	float, err := TryToNumeric(value)
+	if err == nil {
+		value = float
 	}
 
 	switch ComparisonOperator(operator) {
@@ -326,4 +333,8 @@ func parseFunction(stream *streamTokenizer) (Function, error) {
 	}
 
 	return function, nil
+}
+
+func TryToNumeric(value interface{}) (float64, error) {
+	return strconv.ParseFloat(fmt.Sprintf("%v", value), 64)
 }

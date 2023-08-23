@@ -10,14 +10,14 @@ func TestQueries(t *testing.T) {
 	var sql = Query{
 		Fields: []Field{{Name: "foo"}},
 		Group: &PredicateGroup{Predicate: []Tree{
-			NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
+			NewLeaf(Leaf{Value: float64(1), Compare: Eq, Field: "foo"}),
 		}},
 	}
 
 	var data = []input.DataRow{
-		{"foo": "1", "bar": "2"},
-		{"foo": "1", "bar": "3"},
-		{"foo": "2"},
+		{"foo": 1, "bar": "2"},
+		{"foo": 1, "bar": "3"},
+		{"foo": 2},
 	}
 
 	result, err := NewExecutor(sql).QueryData(data)
@@ -27,8 +27,8 @@ func TestQueries(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(result, []input.DataRow{
-		{"foo": "1"},
-		{"foo": "1"},
+		{"foo": 1},
+		{"foo": 1},
 	}) {
 		t.Fail()
 	}
@@ -38,7 +38,7 @@ func TestQueriesAverage(t *testing.T) {
 	var sql = Query{
 		Fields: []Field{{Name: "foo", Alias: "avg", Function: Average}, {Name: "bar", Alias: "bar"}},
 		Group: &PredicateGroup{Predicate: []Tree{
-			NewLeaf(Leaf{Value: 0, Compare: Gt, Field: "foo"}),
+			NewLeaf(Leaf{Value: float64(0), Compare: Gt, Field: "foo"}),
 		}},
 	}
 
@@ -70,14 +70,14 @@ func TestQueriesWithAlias(t *testing.T) {
 	var sql = Query{
 		Fields: []Field{{Name: "foo", Alias: "newfoo"}},
 		Group: &PredicateGroup{Predicate: []Tree{
-			NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "newfoo"}),
+			NewLeaf(Leaf{Value: float64(1), Compare: Eq, Field: "newfoo"}),
 		}},
 	}
 
 	var data = []input.DataRow{
-		{"foo": "1", "bar": "2"},
-		{"foo": "1", "bar": "3"},
-		{"foo": "2"},
+		{"foo": float64(1), "bar": "2"},
+		{"foo": float64(1), "bar": "3"},
+		{"foo": float64(2)},
 	}
 
 	result, err := NewExecutor(sql).QueryData(data)
@@ -87,8 +87,8 @@ func TestQueriesWithAlias(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(result, []input.DataRow{
-		{"newfoo": "1"},
-		{"newfoo": "1"},
+		{"newfoo": float64(1)},
+		{"newfoo": float64(1)},
 	}) {
 		t.Fail()
 	}
@@ -98,14 +98,14 @@ func TestQueriesStar(t *testing.T) {
 	var sql = Query{
 		Fields: []Field{{Name: "*"}},
 		Group: &PredicateGroup{Predicate: []Tree{
-			NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
+			NewLeaf(Leaf{Value: float64(1), Compare: Eq, Field: "foo"}),
 		}},
 	}
 
 	var data = []input.DataRow{
-		{"foo": "1", "bar": "2"},
-		{"foo": "1", "bar": "3"},
-		{"foo": "2"},
+		{"foo": 1, "bar": "2"},
+		{"foo": 1, "bar": "3"},
+		{"foo": 2},
 	}
 
 	result, err := NewExecutor(sql).QueryData(data)
@@ -115,8 +115,8 @@ func TestQueriesStar(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(result, []input.DataRow{
-		{"foo": "1", "bar": "2"},
-		{"foo": "1", "bar": "3"},
+		{"foo": 1, "bar": "2"},
+		{"foo": 1, "bar": "3"},
 	}) {
 		t.Fail()
 	}
@@ -128,15 +128,15 @@ func TestCompoundQueries(t *testing.T) {
 		Group: &PredicateGroup{
 			Operator: Or,
 			Predicate: []Tree{
-				NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
-				NewLeaf(Leaf{Value: "3", Compare: Eq, Field: "bar"}),
+				NewLeaf(Leaf{Value: float64(1), Compare: Eq, Field: "foo"}),
+				NewLeaf(Leaf{Value: float64(3), Compare: Eq, Field: "bar"}),
 			}},
 	}
 
 	var data = []input.DataRow{
-		{"foo": "1", "bar": "2"},
-		{"foo": "2", "bar": "3"},
-		{"foo": "3"},
+		{"foo": 1, "bar": "2"},
+		{"foo": 2, "bar": "3"},
+		{"foo": 3},
 	}
 
 	result, err := NewExecutor(sql).QueryData(data)
@@ -147,8 +147,8 @@ func TestCompoundQueries(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(result, []input.DataRow{
-		{"foo": "1"},
-		{"foo": "2"},
+		{"foo": 1},
+		{"foo": 2},
 	}) {
 		t.Logf("%s", result)
 		t.Fail()
@@ -162,25 +162,25 @@ func TestCompoundTreeQueries(t *testing.T) {
 		Group: &PredicateGroup{
 			Operator: Or,
 			Predicate: []Tree{
-				NewLeaf(Leaf{Value: "1", Compare: Eq, Field: "foo"}),
-				NewLeaf(Leaf{Value: "3", Compare: Eq, Field: "bar"}),
+				NewLeaf(Leaf{Value: float64(1), Compare: Eq, Field: "foo"}),
+				NewLeaf(Leaf{Value: float64(3), Compare: Eq, Field: "bar"}),
 				NewGroup(&PredicateGroup{
 					Operator: And,
 					Predicate: []Tree{
-						NewLeaf(Leaf{Value: 5, Compare: Eq, Field: "baz"}),
-						NewLeaf(Leaf{Value: "5", Compare: Eq, Field: "foo"}),
+						NewLeaf(Leaf{Value: float64(5), Compare: Eq, Field: "baz"}),
+						NewLeaf(Leaf{Value: float64(5), Compare: Eq, Field: "foo"}),
 					},
 				}),
 			}},
 	}
 
 	var data = []input.DataRow{
-		{"foo": "1", "bar": "2"},
-		{"foo": "2", "bar": "3"},
-		{"foo": "3"},
-		{"foo": "4", "baz": 5},
-		{"foo": "5", "baz": 5, "id": 1},
-		{"foo": "5", "baz": 5, "id": 2},
+		{"foo": float64(1), "bar": "2"},
+		{"foo": float64(2), "bar": "3"},
+		{"foo": float64(3)},
+		{"foo": float64(4), "baz": 5},
+		{"foo": float64(5), "baz": 5, "id": 1},
+		{"foo": float64(5), "baz": 5, "id": 2},
 	}
 
 	result, err := NewExecutor(sql).QueryData(data)
@@ -191,10 +191,10 @@ func TestCompoundTreeQueries(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(result, []input.DataRow{
-		{"foo": "1"},
-		{"foo": "2"},
-		{"foo": "5", "id": 1},
-		{"foo": "5", "id": 2},
+		{"foo": float64(1)},
+		{"foo": float64(2)},
+		{"foo": float64(5), "id": 1},
+		{"foo": float64(5), "id": 2},
 	}) {
 		t.Logf("%s", result)
 		t.Fail()
@@ -205,7 +205,7 @@ func TestInClause(t *testing.T) {
 	var sql = Query{
 		Fields: []Field{{Name: "foo"}},
 		Group: &PredicateGroup{Predicate: []Tree{
-			NewLeaf(Leaf{Value: []string{"1"}, Compare: In, Field: "foo"}),
+			NewLeaf(Leaf{Value: []float64{1}, Compare: In, Field: "foo"}),
 		}},
 	}
 

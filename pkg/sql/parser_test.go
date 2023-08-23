@@ -30,7 +30,7 @@ func TestParsesInline(t *testing.T) {
 		t.Fail()
 	}
 
-	if result.Group.Predicate[0].Leaf.Value != "2" {
+	if result.Group.Predicate[0].Leaf.Value != float64(2) {
 		t.Fail()
 	}
 
@@ -42,7 +42,7 @@ func TestParsesInline(t *testing.T) {
 		t.Fail()
 	}
 
-	if result.Group.Predicate[1].Leaf.Value != "3" {
+	if result.Group.Predicate[1].Leaf.Value != float64(3) {
 		t.Fail()
 	}
 }
@@ -80,14 +80,14 @@ func TestParsesWithAlias(t *testing.T) {
         "Leaf": {
           "Field": "x",
           "Compare": "=",
-          "Value": "2"
+          "Value": 2
         }
       },
       {
         "Leaf": {
           "Field": "y",
           "Compare": "=",
-          "Value": "3"
+          "Value": 3
         }
       }
     ]
@@ -116,7 +116,7 @@ func TestParses(t *testing.T) {
 		t.Fail()
 	}
 
-	if result.Group.Predicate[0].Leaf.Value != "2" {
+	if result.Group.Predicate[0].Leaf.Value != float64(2) {
 		t.Fail()
 	}
 
@@ -159,7 +159,7 @@ func TestParsesWithOperator(t *testing.T) {
 		t.Fail()
 	}
 
-	if result.Group.Predicate[0].Leaf.Value != "2" {
+	if result.Group.Predicate[0].Leaf.Value != float64(2) {
 		t.Fail()
 	}
 
@@ -171,7 +171,7 @@ func TestParsesWithOperator(t *testing.T) {
 		t.Fail()
 	}
 
-	if result.Group.Predicate[1].Leaf.Value != "3" {
+	if result.Group.Predicate[1].Leaf.Value != float64(3) {
 		t.Fail()
 	}
 }
@@ -195,11 +195,11 @@ func TestParsesWithOperatorGrouping(t *testing.T) {
 				NewGroup(&PredicateGroup{
 					Operator: And,
 					Predicate: []Tree{
-						NewLeaf(Leaf{Field: "x", Compare: Eq, Value: "2"}),
-						NewLeaf(Leaf{Field: "y", Compare: Eq, Value: "3"}),
+						NewLeaf(Leaf{Field: "x", Compare: Eq, Value: 2}),
+						NewLeaf(Leaf{Field: "y", Compare: Eq, Value: 3}),
 					},
 				}),
-				NewLeaf(Leaf{Field: "foo", Compare: Eq, Value: "1"}),
+				NewLeaf(Leaf{Field: "foo", Compare: Eq, Value: 1}),
 			}},
 	}, t)
 

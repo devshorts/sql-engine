@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"reflect"
 	"slices"
-	"strconv"
 )
 
 type GroupingOperator string
@@ -162,7 +161,11 @@ func (s *Executor) inPredicateGroup(row input.DataRow, group *PredicateGroup) (b
 
 	exists := func(predicate Tree) (bool, error) {
 		if predicate.Leaf != nil {
-			value := row[keyNameFromAlias(predicate.Leaf.Field, s.sql)]
+			numeric, err := TryToNumeric(row[keyNameFromAlias(predicate.Leaf.Field, s.sql)])
+
+			stringValue := row[keyNameFromAlias(predicate.Leaf.Field, s.sql)]
+
+			value := tern[interface{}](err == nil, numeric, stringValue)
 
 			return s.compare(predicate.Leaf, value)
 		}
@@ -268,7 +271,7 @@ func (s *Executor) processFunctionGroupings(results []input.DataRow) ([]input.Da
 	for _, field := range functionFields {
 		var fieldValues []float64
 		for _, row := range results {
-			numeric, err := getFloat(row[string(field.Alias)])
+			numeric, err := TryToNumeric(row[string(field.Alias)])
 			if err != nil {
 				return nil, err
 			}
@@ -307,27 +310,4 @@ func NewExecutor(sql Query) *Executor {
 	return &Executor{
 		sql: sql,
 	}
-}
-
-var floatType = reflect.TypeOf(float64(0))
-
-func getFloat(unk interface{}) (float64, error) {
-	str := fmt.Sprintf("%v", unk)
-
-	float, err := strconv.ParseFloat(str, 64)
-	if err == nil {
-		return float, nil
-	}
-
-	if err != nil {
-		v := reflect.ValueOf(unk)
-		v = reflect.Indirect(v)
-		if !v.Type().ConvertibleTo(floatType) {
-			return 0, fmt.Errorf("cannot convert %v to float64", v.Type())
-		}
-		fv := v.Convert(floatType)
-		return fv.Float(), nil
-	}
-
-	return 0, errors.New("unable to convert to float")
 }
