@@ -20,7 +20,7 @@ func main() {
 			queryString := ctx.Args().Get(0)
 
 			if queryString == "" {
-				return errors.New("Need valid sql query as first argument")
+				return errors.New("need valid sql query as first argument")
 			}
 
 			query, err := sql.Parse(queryString)
